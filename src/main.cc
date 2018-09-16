@@ -1,19 +1,33 @@
-#include <iostream>
 #include <dlfcn.h>
+#include <iostream>
 #include <signal.h>
+#include <string>
+
 #include "../libpcsxcore/plugins.h"
 
-int main()
+const char ISO_FILENAME[] = "/hme/infcpl00/psx_games/tekken3.bin";
+
+int main(int argc, char* args[])
 {
-  SetIsoFile("~/psx_games/tekken3.bin");
-  /*
+  if (argc < 2)
+  {
+    std::cout << "iso?" << std::endl;
+    return -1;
+  }
+  std::string iso_filename = args[1];
+  std::cout << "Setting iso file name: " << iso_filename << std::endl;
+  SetIsoFile(iso_filename.c_str());
   if (LoadCdrom() == -1)
   {
     std::cout << "Could not load CD-ROM" << std::endl;
   }
-  */
+  std::cout << "Executing ..." << std::endl;
+	psxCpu->Execute();
   return 0;
 }
+
+// The pcsxcore seems to make use of these functions, which are platform
+// dependent. Here they are defined on top of Linux libraries.
 
 void SysClose() {
 	EmuShutdown();
