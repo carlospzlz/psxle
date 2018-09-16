@@ -40,7 +40,7 @@ set(SRCS
 )
 add_executable(psxle ${SRCS} )
 
-target_link_libraries(psxle pcsxcore ${CMAKE_THREAD_LIBS_INIT} ${ZLIB_LIBRARIES} ${RT_LIB} ${DL_LIB} ${X11_XTest_LIB})
+target_link_libraries(psxle pcsxcore ${GTK_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${ZLIB_LIBRARIES} ${RT_LIB} ${DL_LIB} ${X11_XTest_LIB})
 
 # Components.
 add_subdirectory(libpcsxcore)

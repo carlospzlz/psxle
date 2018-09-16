@@ -1,11 +1,33 @@
 #include <dlfcn.h>
 #include <iostream>
+#include <regex.h>
 #include <signal.h>
 #include <string>
 #include <gtk/gtk.h>
 #include <sys/stat.h>
 
 #include "../libpcsxcore/plugins.h"
+
+#define DEFAULT_MEM_CARD_1 "/.pcsxr/memcards/card1.mcd"
+#define DEFAULT_MEM_CARD_2 "/.pcsxr/memcards/card2.mcd"
+#define MEMCARD_DIR "/.pcsxr/memcards/"
+#define PLUGINS_DIR "/.pcsxr/plugins/"
+#define PLUGINS_CFG_DIR "/.pcsxr/plugins/cfg/"
+#define PCSXR_DOT_DIR "/.pcsxr/"
+#define BIOS_DIR "/.pcsxr/bios/"
+#define STATES_DIR "/.pcsxr/sstates/"
+#define CHEATS_DIR "/.pcsxr/cheats/"
+#define PATCHES_DIR "/.pcsxr/patches/"
+// These two were added by me:
+// This is likely to be right.
+#define DEF_PLUGIN_DIR "/usr/lib/games/"
+// This is likely to be wrong.
+#define PSEMU_DATA_DIR "/usr/lib/games/psemu"
+
+#define OLD_SLOT 1000
+#define NUM_OLD_SLOTS 2
+#define LAST_OLD_SLOT (OLD_SLOT + NUM_OLD_SLOTS - 1)
+
 
 static void CheckSubDir();
 static void ScanAllPlugins(void);
@@ -188,6 +210,8 @@ void SysRunGui() {
   std::cout << "SysRunGui? No GUI!" << std::endl;
 }
 
+// These functions are used by the main.
+
 /* Create a directory under the $HOME directory, if that directory doesn't already exist */
 static void CreateHomeConfigDir(char *directory) {
 	struct stat buf;
@@ -210,6 +234,22 @@ static void CheckSubDir() {
 	CreateHomeConfigDir(PLUGINS_CFG_DIR);
 	CreateHomeConfigDir(CHEATS_DIR);
 	CreateHomeConfigDir(PATCHES_DIR);
+}
+
+int match(const char *string, char *pattern) {
+	int    status;
+	regex_t    re;
+
+	if (regcomp(&re, pattern, REG_EXTENDED | REG_NOSUB) != 0) {
+		return 0;
+	}
+	status = regexec(&re, string, (size_t) 0, NULL, 0);
+	regfree(&re);
+	if (status != 0) {
+		return 0;
+	}
+
+	return 1;
 }
 
 static void ScanPlugins(gchar* scandir) {
@@ -247,6 +287,62 @@ static void ScanPlugins(gchar* scandir) {
 		}
 		closedir(dir);
 	}
+}
+
+static void ScanBios(gchar* scandir) {
+	// scan for bioses
+	DIR *dir;
+	struct dirent *ent;
+
+	gchar *linkname;
+	gchar *filename;
+
+	/* Any bioses found will be symlinked to the following directory */
+	dir = opendir(scandir);
+	if (dir != NULL) {
+		while ((ent = readdir(dir)) != NULL) {
+			filename = g_build_filename(scandir, ent->d_name, NULL);
+
+			if (match(filename, ".*\\.bin$") == 0 &&
+				match(filename, ".*\\.BIN$") == 0) {
+				continue;	/* Skip this file */
+			} else {
+				/* Create a symlink from this file to the directory ~/.pcsxr/plugin */
+				linkname = g_build_filename(getenv("HOME"), BIOS_DIR, ent->d_name, NULL);
+				symlink(filename, linkname);
+
+				g_free(linkname);
+			}
+			g_free(filename);
+		}
+		closedir(dir);
+	}
+}
+
+static void CheckSymlinksInPath(char* dotdir) {
+	DIR *dir;
+	struct dirent *ent;
+	struct stat stbuf;
+	gchar *linkname;
+
+	dir = opendir(dotdir);
+	if (dir == NULL) {
+		SysMessage(_("Could not open directory: '%s'\n"), dotdir);
+		return;
+	}
+
+	/* Check for any bad links in the directory. If the remote
+	   file no longer exists, remove the link */
+	while ((ent = readdir(dir)) != NULL) {
+		linkname = g_strconcat (dotdir, ent->d_name, NULL);
+
+		if (stat(linkname, &stbuf) == -1) {
+			/* File link is bad, remove it */
+			unlink(linkname);
+		}
+		g_free (linkname);
+	}
+	closedir(dir);
 }
 
 static void ScanAllPlugins (void) {
