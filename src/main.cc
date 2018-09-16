@@ -2,10 +2,13 @@
 #include <iostream>
 #include <signal.h>
 #include <string>
+#include <gtk/gtk.h>
+#include <sys/stat.h>
 
 #include "../libpcsxcore/plugins.h"
 
-const char ISO_FILENAME[] = "/hme/infcpl00/psx_games/tekken3.bin";
+static void CheckSubDir();
+static void ScanAllPlugins(void);
 
 int main(int argc, char* args[])
 {
@@ -17,6 +20,19 @@ int main(int argc, char* args[])
   std::string iso_filename = args[1];
   std::cout << "Setting iso file name: " << iso_filename << std::endl;
   SetIsoFile(iso_filename.c_str());
+  std::cout << "Checking subdirectory" << std::endl;
+	CheckSubDir();
+  std::cout << "Scanning all plugins" << std::endl;
+	ScanAllPlugins();
+  std::cout << "Initialising system" << std::endl;
+	if (SysInit() == -1)
+  {
+    std::cout << "Could not init System" << std::endl;
+    return 1;
+  }
+  std::cout << "Checking CD-ROM" << std::endl;
+	CheckCdrom();
+  std::cout << "Loading CD-ROM" << std::endl;
   if (LoadCdrom() == -1)
   {
     std::cout << "Could not load CD-ROM" << std::endl;
@@ -28,6 +44,44 @@ int main(int argc, char* args[])
 
 // The pcsxcore seems to make use of these functions, which are platform
 // dependent. Here they are defined on top of Linux libraries.
+
+int SysInit() {
+#ifdef EMU_LOG
+#ifndef LOG_STDOUT
+	emuLog = fopen("emuLog.txt","wb");
+#else
+	emuLog = stdout;
+#endif
+#ifdef PSXCPU_LOG
+	if (Config.PsxOut) { //PSXCPU_LOG generates so much stuff that buffer is necessary
+		const int BUFSZ = 20 * 1024*1024;
+		void* buf = malloc(BUFSZ);
+		setvbuf(emuLog, buf, _IOFBF, BUFSZ);
+	} else {
+		setvbuf(emuLog, NULL, _IONBF, 0u);
+	}
+#else
+	setvbuf(emuLog, NULL, _IONBF, 0u);
+#endif
+#endif
+
+	if (EmuInit() == -1) {
+		printf(_("PSX emulator couldn't be initialized.\n"));
+		return -1;
+	}
+
+	LoadMcds(Config.Mcd1, Config.Mcd2);	/* TODO Do we need to have this here, or in the calling main() function?? */
+
+	if (Config.Debug) {
+		StartDebugger();
+	}
+
+	return 0;
+}
+
+void SysReset() {
+	EmuReset();
+}
 
 void SysClose() {
 	EmuShutdown();
@@ -96,10 +150,6 @@ void SysCloseLibrary(void *lib) {
 	dlclose(lib);
 }
 
-void SysReset() {
-	EmuReset();
-}
-
 void SysUpdate() {
   /*
 	PADhandleKey(PAD1_keypressed() );
@@ -136,4 +186,141 @@ void ClosePlugins() {
 
 void SysRunGui() {
   std::cout << "SysRunGui? No GUI!" << std::endl;
+}
+
+/* Create a directory under the $HOME directory, if that directory doesn't already exist */
+static void CreateHomeConfigDir(char *directory) {
+	struct stat buf;
+
+	if (stat(directory, &buf) == -1) {
+		gchar *dir_name = g_build_filename (getenv("HOME"), directory, NULL);
+		mkdir(dir_name, S_IRWXU | S_IRWXG);
+		g_free (dir_name);
+	}
+}
+
+static void CheckSubDir() {
+	// make sure that ~/.pcsxr exists
+	CreateHomeConfigDir(PCSXR_DOT_DIR);
+
+	CreateHomeConfigDir(BIOS_DIR);
+	CreateHomeConfigDir(MEMCARD_DIR);
+	CreateHomeConfigDir(STATES_DIR);
+	CreateHomeConfigDir(PLUGINS_DIR);
+	CreateHomeConfigDir(PLUGINS_CFG_DIR);
+	CreateHomeConfigDir(CHEATS_DIR);
+	CreateHomeConfigDir(PATCHES_DIR);
+}
+
+static void ScanPlugins(gchar* scandir) {
+	// scan for plugins and configuration tools
+	DIR *dir;
+	struct dirent *ent;
+
+	gchar *linkname;
+	gchar *filename;
+
+	/* Any plugins found will be symlinked to the following directory */
+	dir = opendir(scandir);
+	if (dir != NULL) {
+		while ((ent = readdir(dir)) != NULL) {
+			filename = g_build_filename (scandir, ent->d_name, NULL);
+
+			if (match(filename, ".*\\.so$") == 0 &&
+				match(filename, ".*\\.dylib$") == 0 &&
+				match(filename, "cfg.*") == 0) {
+				continue;	/* Skip this file */
+			} else {
+				/* Create a symlink from this file to the directory ~/.pcsxr/plugin */
+				linkname = g_build_filename (getenv("HOME"), PLUGINS_DIR, ent->d_name, NULL);
+				symlink(filename, linkname);
+
+				/* If it's a config tool, make one in the cfg dir as well.
+				   This allows plugins with retarded cfg finding to work :- ) */
+				if (match(filename, "cfg.*") == 1) {
+					linkname = g_build_filename (getenv("HOME"), PLUGINS_CFG_DIR, ent->d_name, NULL);
+					symlink(filename, linkname);
+				}
+				g_free (linkname);
+			}
+			g_free (filename);
+		}
+		closedir(dir);
+	}
+}
+
+static void ScanAllPlugins (void) {
+	gchar *currentdir;
+
+	// scan some default locations to find plugins
+	ScanPlugins("/usr/lib/games/psemu/");
+	ScanPlugins("/usr/lib/games/psemu/lib/");
+	ScanPlugins("/usr/lib/games/psemu/config/");
+	ScanPlugins("/usr/local/lib/games/psemu/lib/");
+	ScanPlugins("/usr/local/lib/games/psemu/config/");
+	ScanPlugins("/usr/local/lib/games/psemu/");
+	ScanPlugins("/usr/lib64/games/psemu/");
+	ScanPlugins("/usr/lib64/games/psemu/lib/");
+	ScanPlugins("/usr/lib64/games/psemu/config/");
+	ScanPlugins("/usr/local/lib64/games/psemu/lib/");
+	ScanPlugins("/usr/local/lib64/games/psemu/config/");
+	ScanPlugins("/usr/local/lib64/games/psemu/");
+	ScanPlugins("/usr/lib32/games/psemu/");
+	ScanPlugins("/usr/lib32/games/psemu/lib/");
+	ScanPlugins("/usr/lib32/games/psemu/config/");
+	ScanPlugins("/usr/local/lib32/games/psemu/lib/");
+	ScanPlugins("/usr/local/lib32/games/psemu/config/");
+	ScanPlugins("/usr/local/lib32/games/psemu/");
+	ScanPlugins(DEF_PLUGIN_DIR);
+	ScanPlugins(DEF_PLUGIN_DIR "/lib");
+	ScanPlugins(DEF_PLUGIN_DIR "/lib64");
+	ScanPlugins(DEF_PLUGIN_DIR "/lib32");
+	ScanPlugins(DEF_PLUGIN_DIR "/config");
+
+	// scan some default locations to find bioses
+	ScanBios("/usr/lib/games/psemu");
+	ScanBios("/usr/lib/games/psemu/bios");
+	ScanBios("/usr/lib64/games/psemu");
+	ScanBios("/usr/lib64/games/psemu/bios");
+	ScanBios("/usr/lib32/games/psemu");
+	ScanBios("/usr/lib32/games/psemu/bios");
+	ScanBios("/usr/share/psemu");
+	ScanBios("/usr/share/psemu/bios");
+	ScanBios("/usr/share/pcsxr");
+	ScanBios("/usr/share/pcsxr/bios");
+	ScanBios("/usr/local/lib/games/psemu");
+	ScanBios("/usr/local/lib/games/psemu/bios");
+	ScanBios("/usr/local/lib64/games/psemu");
+	ScanBios("/usr/local/lib64/games/psemu/bios");
+	ScanBios("/usr/local/lib32/games/psemu");
+	ScanBios("/usr/local/lib32/games/psemu/bios");
+	ScanBios("/usr/local/share/psemu");
+	ScanBios("/usr/local/share/psemu/bios");
+	ScanBios("/usr/local/share/pcsxr");
+	ScanBios("/usr/local/share/pcsxr/bios");
+	ScanBios(PSEMU_DATA_DIR);
+	ScanBios(PSEMU_DATA_DIR "/bios");
+
+	currentdir = g_strconcat(getenv("HOME"), "/.psemu-plugins/", NULL);
+	ScanPlugins(currentdir);
+	g_free(currentdir);
+
+	currentdir = g_strconcat(getenv("HOME"), "/.psemu/", NULL);
+	ScanPlugins(currentdir);
+	g_free(currentdir);
+
+	// Check for bad links in ~/.pcsxr/plugins/
+	currentdir = g_build_filename(getenv("HOME"), PLUGINS_DIR, NULL);
+	CheckSymlinksInPath(currentdir);
+	g_free(currentdir);
+
+	// Check for bad links in ~/.pcsxr/plugins/cfg
+	currentdir = g_build_filename(getenv("HOME"), PLUGINS_CFG_DIR, NULL);
+	CheckSymlinksInPath(currentdir);
+	g_free(currentdir);
+
+	// Check for bad links in ~/.pcsxr/bios
+	currentdir = g_build_filename(getenv("HOME"), BIOS_DIR, NULL);
+	CheckSymlinksInPath(currentdir);
+	g_free(currentdir);
 }

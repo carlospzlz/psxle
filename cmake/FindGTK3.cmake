@@ -44,42 +44,44 @@ endif()
 find_library(GTK3_LIBRARY gtk-3 HINTS ${GTK3_PKG_LIBRARY_DIRS})
 set(GTK3 gtk-3)
 
-if(GTK3_LIBRARY)
-  add_library(${GTK3} SHARED IMPORTED)
-  set_property(TARGET ${GTK3} PROPERTY IMPORTED_LOCATION "${GTK3_LIBRARY}")
-  set_property(TARGET ${GTK3} PROPERTY INTERFACE_COMPILE_OPTIONS "${GTK3_PKG_CFLAGS_OTHER}")
+if (NOT GTK3_FOUND)
+ if(GTK3_LIBRARY)
+   add_library(${GTK3} SHARED IMPORTED)
+   set_property(TARGET ${GTK3} PROPERTY IMPORTED_LOCATION "${GTK3_LIBRARY}")
+   set_property(TARGET ${GTK3} PROPERTY INTERFACE_COMPILE_OPTIONS "${GTK3_PKG_CFLAGS_OTHER}")
 
-  set(GTK3_INCLUDE_DIRS)
+   set(GTK3_INCLUDE_DIRS)
 
-  find_path(GTK3_INCLUDE_DIR "gtk/gtk.h"
-    HINTS ${GTK3_PKG_INCLUDE_DIRS})
+   find_path(GTK3_INCLUDE_DIR "gtk/gtk.h"
+	 HINTS ${GTK3_PKG_INCLUDE_DIRS})
 
-  if(GTK3_INCLUDE_DIR)
-    file(STRINGS "${GTK3_INCLUDE_DIR}/gtk/gtkversion.h" GTK3_MAJOR_VERSION REGEX "^#define GTK_MAJOR_VERSION +\\(?([0-9]+)\\)?$")
-    string(REGEX REPLACE "^#define GTK_MAJOR_VERSION \\(?([0-9]+)\\)?$" "\\1" GTK3_MAJOR_VERSION "${GTK3_MAJOR_VERSION}")
-    file(STRINGS "${GTK3_INCLUDE_DIR}/gtk/gtkversion.h" GTK3_MINOR_VERSION REGEX "^#define GTK_MINOR_VERSION +\\(?([0-9]+)\\)?$")
-    string(REGEX REPLACE "^#define GTK_MINOR_VERSION \\(?([0-9]+)\\)?$" "\\1" GTK3_MINOR_VERSION "${GTK3_MINOR_VERSION}")
-    file(STRINGS "${GTK3_INCLUDE_DIR}/gtk/gtkversion.h" GTK3_MICRO_VERSION REGEX "^#define GTK_MICRO_VERSION +\\(?([0-9]+)\\)?$")
-    string(REGEX REPLACE "^#define GTK_MICRO_VERSION \\(?([0-9]+)\\)?$" "\\1" GTK3_MICRO_VERSION "${GTK3_MICRO_VERSION}")
-    set(GTK3_VERSION "${GTK3_MAJOR_VERSION}.${GTK3_MINOR_VERSION}.${GTK3_MICRO_VERSION}")
-    unset(GTK3_MAJOR_VERSION)
-    unset(GTK3_MINOR_VERSION)
-    unset(GTK3_MICRO_VERSION)
+   if(GTK3_INCLUDE_DIR)
+	 file(STRINGS "${GTK3_INCLUDE_DIR}/gtk/gtkversion.h" GTK3_MAJOR_VERSION REGEX "^#define GTK_MAJOR_VERSION +\\(?([0-9]+)\\)?$")
+	 string(REGEX REPLACE "^#define GTK_MAJOR_VERSION \\(?([0-9]+)\\)?$" "\\1" GTK3_MAJOR_VERSION "${GTK3_MAJOR_VERSION}")
+	 file(STRINGS "${GTK3_INCLUDE_DIR}/gtk/gtkversion.h" GTK3_MINOR_VERSION REGEX "^#define GTK_MINOR_VERSION +\\(?([0-9]+)\\)?$")
+	 string(REGEX REPLACE "^#define GTK_MINOR_VERSION \\(?([0-9]+)\\)?$" "\\1" GTK3_MINOR_VERSION "${GTK3_MINOR_VERSION}")
+	 file(STRINGS "${GTK3_INCLUDE_DIR}/gtk/gtkversion.h" GTK3_MICRO_VERSION REGEX "^#define GTK_MICRO_VERSION +\\(?([0-9]+)\\)?$")
+	 string(REGEX REPLACE "^#define GTK_MICRO_VERSION \\(?([0-9]+)\\)?$" "\\1" GTK3_MICRO_VERSION "${GTK3_MICRO_VERSION}")
+	 set(GTK3_VERSION "${GTK3_MAJOR_VERSION}.${GTK3_MINOR_VERSION}.${GTK3_MICRO_VERSION}")
+	 unset(GTK3_MAJOR_VERSION)
+	 unset(GTK3_MINOR_VERSION)
+	 unset(GTK3_MICRO_VERSION)
 
-    list(APPEND GTK3_INCLUDE_DIRS ${GTK3_INCLUDE_DIR})
-    set_property(TARGET ${GTK3} PROPERTY INTERFACE_INCLUDE_DIRECTORIES "${GTK3_INCLUDE_DIR}")
-  endif()
+	 list(APPEND GTK3_INCLUDE_DIRS ${GTK3_INCLUDE_DIR})
+	 set_property(TARGET ${GTK3} PROPERTY INTERFACE_INCLUDE_DIRECTORIES "${GTK3_INCLUDE_DIR}")
+   endif()
+ endif()
+
+ set(GTK3_DEPS_FOUND_VARS)
+ foreach(gtk3_dep ${GTK3_DEPS})
+   find_package(${gtk3_dep})
+
+   list(APPEND GTK3_DEPS_FOUND_VARS "${gtk3_dep}_FOUND")
+   list(APPEND GTK3_INCLUDE_DIRS ${${gtk3_dep}_INCLUDE_DIRS})
+
+   set_property (TARGET "${GTK3}" APPEND PROPERTY INTERFACE_LINK_LIBRARIES "${${gtk3_dep}}")
+ endforeach(gtk3_dep)
 endif()
-
-set(GTK3_DEPS_FOUND_VARS)
-foreach(gtk3_dep ${GTK3_DEPS})
-  find_package(${gtk3_dep})
-
-  list(APPEND GTK3_DEPS_FOUND_VARS "${gtk3_dep}_FOUND")
-  list(APPEND GTK3_INCLUDE_DIRS ${${gtk3_dep}_INCLUDE_DIRS})
-
-  set_property (TARGET "${GTK3}" APPEND PROPERTY INTERFACE_LINK_LIBRARIES "${${gtk3_dep}}")
-endforeach(gtk3_dep)
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(GTK3
