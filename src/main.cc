@@ -1,3 +1,20 @@
+/*  Psxle - Psx Learning Environment
+ *  Copyright (C) 2018  Carlos Perez-Lopez
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 #include <dlfcn.h>
 #include <iostream>
 #include <regex.h>
@@ -11,7 +28,7 @@
 #define DEFAULT_MEM_CARD_1 "/.pcsxr/memcards/card1.mcd"
 #define DEFAULT_MEM_CARD_2 "/.pcsxr/memcards/card2.mcd"
 #define MEMCARD_DIR "/.pcsxr/memcards/"
-#define PLUGINS_DIR "/.pcsxr/plugins/"
+//#define PLUGINS_DIR "/.pcsxr/plugins/"
 #define PLUGINS_CFG_DIR "/.pcsxr/plugins/cfg/"
 #define PCSXR_DOT_DIR "/.pcsxr/"
 #define BIOS_DIR "/.pcsxr/bios/"
@@ -28,9 +45,12 @@
 #define NUM_OLD_SLOTS 2
 #define LAST_OLD_SLOT (OLD_SLOT + NUM_OLD_SLOTS - 1)
 
+static char PLUGINS_DIR[] = "/.pcsxr/plugins";
 
 static void CheckSubDir();
 static void ScanAllPlugins(void);
+
+unsigned long gpuDisp;
 
 int main(int argc, char* args[])
 {
@@ -46,14 +66,33 @@ int main(int argc, char* args[])
 	CheckSubDir();
   std::cout << "Scanning all plugins" << std::endl;
 	ScanAllPlugins();
+  std::cout << "Load plugins" << std::endl;
+  std::string plugins_dir = std::string(getenv("HOME")) + PLUGINS_DIR;
+  strcpy(Config.PluginsDir, plugins_dir.c_str());
+  strcpy(Config.Gpu, "libDFXVideo.so");
+  strcpy(Config.Spu, "libDFSound.so");
+  strcpy(Config.Pad1, "libDFInput.so");
+  strcpy(Config.Pad2, "libDFInput.so");
+  if (LoadPlugins() == -1)
+  {
+    std::cout << "Could not load plugins" << std::endl;
+    return -1;
+  }
+  if (OpenPlugins() == -1)
+  {
+    std::cout << "Could not open plugins" << std::endl;
+    return -1;
+  }
   std::cout << "Initialising system" << std::endl;
 	if (SysInit() == -1)
   {
     std::cout << "Could not init System" << std::endl;
-    return 1;
+    return -1;
   }
   std::cout << "Checking CD-ROM" << std::endl;
 	CheckCdrom();
+  std::cout << "Reseting the system" << std::endl;
+	SysReset();
   std::cout << "Loading CD-ROM" << std::endl;
   if (LoadCdrom() == -1)
   {
@@ -179,31 +218,6 @@ void SysUpdate() {
 
 	SysDisableScreenSaver();
   */
-}
-
-void ClosePlugins() {
-	int ret;
-
-	signal(SIGINT, SIG_DFL);
-	signal(SIGPIPE, SIG_DFL);
-	ret = CDR_close();
-	if (ret < 0) { SysMessage(_("Error closing CD-ROM plugin!")); return; }
-	ret = SPU_close();
-	if (ret < 0) { SysMessage(_("Error closing SPU plugin!")); return; }
-	ret = PAD1_close();
-	if (ret < 0) { SysMessage(_("Error closing Controller 1 Plugin!")); return; }
-	ret = PAD2_close();
-	if (ret < 0) { SysMessage(_("Error closing Controller 2 plugin!")); return; }
-	ret = GPU_close();
-	if (ret < 0) { SysMessage(_("Error closing GPU plugin!")); return; }
-#ifdef ENABLE_SIO1API
-	ret = SIO1_close();
-	if (ret < 0) { SysMessage(_("Error closing SIO1 plugin!")); return; }
-#endif
-
-	if (Config.UseNet) {
-		NET_pause();
-	}
 }
 
 void SysRunGui() {
@@ -420,3 +434,151 @@ static void ScanAllPlugins (void) {
 	CheckSymlinksInPath(currentdir);
 	g_free(currentdir);
 }
+
+void OnFile_Exit()
+{
+  std::cout << "Bye!" << std::endl;
+  exit(0);
+}
+
+void SignalExit(int sig) {
+	ClosePlugins();
+	OnFile_Exit();
+}
+
+#define PARSEPATH(dst, src) \
+	ptr = src + strlen(src); \
+	while (*ptr != '\\' && ptr != src) ptr--; \
+	if (ptr != src) { \
+		strcpy(dst, ptr+1); \
+	}
+
+
+int _OpenPlugins() {
+	int ret;
+
+	signal(SIGINT, SignalExit);
+	signal(SIGPIPE, SignalExit);
+
+	GPU_clearDynarec(clearDynarec);
+
+	ret = CDR_open();
+	if (ret < 0) { SysMessage(_("Error opening CD-ROM plugin!")); return -1; }
+	ret = SPU_open();
+	if (ret < 0) { SysMessage(_("Error opening SPU plugin!")); return -1; }
+	SPU_registerCallback(SPUirq);
+	ret = GPU_open(&gpuDisp, "PCSXR", NULL);
+	if (ret < 0) { SysMessage(_("Error opening GPU plugin!")); return -1; }
+	ret = PAD1_open(&gpuDisp);
+	ret |= PAD1_init(1); // Allow setting to change during run
+	if (ret < 0) { SysMessage(_("Error opening Controller 1 plugin!")); return -1; }
+	PAD1_registerVibration(GPU_visualVibration);
+	PAD1_registerCursor(GPU_cursor);
+	ret = PAD2_open(&gpuDisp);
+	ret |= PAD2_init(2); // Allow setting to change during run
+	if (ret < 0) { SysMessage(_("Error opening Controller 2 plugin!")); return -1; }
+	PAD2_registerVibration(GPU_visualVibration);
+	PAD2_registerCursor(GPU_cursor);
+#ifdef ENABLE_SIO1API
+	ret = SIO1_open(&gpuDisp);
+	if (ret < 0) { SysMessage(_("Error opening SIO1 plugin!")); return -1; }
+	SIO1_registerCallback(SIO1irq);
+#endif
+
+	if (Config.UseNet && !NetOpened) {
+		netInfo info;
+		char path[MAXPATHLEN];
+		char dotdir[MAXPATHLEN];
+
+		strncpy(dotdir, getenv("HOME"), MAXPATHLEN-100);
+		strcat(dotdir, "/.pcsxr/plugins/");
+
+		strcpy(info.EmuName, "PCSXR " PACKAGE_VERSION);
+		strncpy(info.CdromID, CdromId, 9);
+		strncpy(info.CdromLabel, CdromLabel, 9);
+		info.psxMem = psxM;
+		info.GPU_showScreenPic = GPU_showScreenPic;
+		info.GPU_displayText = GPU_displayText;
+		info.GPU_showScreenPic = GPU_showScreenPic;
+		info.PAD_setSensitive = PAD1_setSensitive;
+		sprintf(path, "%s%s", Config.BiosDir, Config.Bios);
+		strcpy(info.BIOSpath, path);
+		strcpy(info.MCD1path, Config.Mcd1);
+		strcpy(info.MCD2path, Config.Mcd2);
+		sprintf(path, "%s%s", dotdir, Config.Gpu);
+		strcpy(info.GPUpath, path);
+		sprintf(path, "%s%s", dotdir, Config.Spu);
+		strcpy(info.SPUpath, path);
+		sprintf(path, "%s%s", dotdir, Config.Cdr);
+		strcpy(info.CDRpath, path);
+		NET_setInfo(&info);
+
+		ret = NET_open(&gpuDisp);
+		if (ret < 0) {
+			if (ret == -2) {
+				// -2 is returned when something in the info
+				// changed and needs to be synced
+				char *ptr;
+
+				PARSEPATH(Config.Bios, info.BIOSpath);
+				PARSEPATH(Config.Gpu,  info.GPUpath);
+				PARSEPATH(Config.Spu,  info.SPUpath);
+				PARSEPATH(Config.Cdr,  info.CDRpath);
+
+				strcpy(Config.Mcd1, info.MCD1path);
+				strcpy(Config.Mcd2, info.MCD2path);
+				return -2;
+			} else {
+				Config.UseNet = FALSE;
+			}
+		} else {
+			if (NET_queryPlayer() == 1) {
+				if (SendPcsxInfo() == -1) Config.UseNet = FALSE;
+			} else {
+				if (RecvPcsxInfo() == -1) Config.UseNet = FALSE;
+			}
+		}
+		NetOpened = TRUE;
+	} else if (Config.UseNet) {
+		NET_resume();
+	}
+
+	return 0;
+}
+
+int OpenPlugins() {
+	int ret;
+
+	while ((ret = _OpenPlugins()) == -2) {
+		ReleasePlugins();
+		LoadMcds(Config.Mcd1, Config.Mcd2);
+		if (LoadPlugins() == -1) return -1;
+	}
+	return ret;
+}
+
+void ClosePlugins() {
+	int ret;
+
+	signal(SIGINT, SIG_DFL);
+	signal(SIGPIPE, SIG_DFL);
+	ret = CDR_close();
+	if (ret < 0) { SysMessage(_("Error closing CD-ROM plugin!")); return; }
+	ret = SPU_close();
+	if (ret < 0) { SysMessage(_("Error closing SPU plugin!")); return; }
+	ret = PAD1_close();
+	if (ret < 0) { SysMessage(_("Error closing Controller 1 Plugin!")); return; }
+	ret = PAD2_close();
+	if (ret < 0) { SysMessage(_("Error closing Controller 2 plugin!")); return; }
+	ret = GPU_close();
+	if (ret < 0) { SysMessage(_("Error closing GPU plugin!")); return; }
+#ifdef ENABLE_SIO1API
+	ret = SIO1_close();
+	if (ret < 0) { SysMessage(_("Error closing SIO1 plugin!")); return; }
+#endif
+
+	if (Config.UseNet) {
+		NET_pause();
+	}
+}
+
