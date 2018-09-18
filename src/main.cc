@@ -24,7 +24,24 @@
 #include <sys/stat.h>
 
 #include "../libpcsxcore/plugins.h"
+#include "../libpcsxcore/cheat.h"
+#include "../libpcsxcore/debug.h"
+// DEBUG
+#define LOG_STDOUT
 
+#define PAD_LOG  __Log
+#define SIO1_LOG  __Log
+#define GTE_LOG  __Log
+#define CDR_LOG  __Log("%8.8lx %8.8lx: ", psxRegs.pc, psxRegs.cycle); __Log
+#define CDR_LOG_IO  __Log("%8.8lx %8.8lx: ", psxRegs.pc, psxRegs.cycle); __Log
+
+#define PSXHW_LOG   __Log("%8.8lx %8.8lx: ", psxRegs.pc, psxRegs.cycle); __Log
+#define PSXBIOS_LOG __Log("%8.8lx %8.8lx: ", psxRegs.pc, psxRegs.cycle); __Log
+#define PSXDMA_LOG  __Log
+#define PSXMEM_LOG  __Log("%8.8lx %8.8lx: ", psxRegs.pc, psxRegs.cycle); __Log
+#define PSXCPU_LOG  __Log
+
+// Global defines
 #define DEFAULT_MEM_CARD_1 "/.pcsxr/memcards/card1.mcd"
 #define DEFAULT_MEM_CARD_2 "/.pcsxr/memcards/card2.mcd"
 #define MEMCARD_DIR "/.pcsxr/memcards/"
@@ -73,11 +90,38 @@ int main(int argc, char* args[])
   strcpy(Config.Spu, "libDFSound.so");
   strcpy(Config.Pad1, "libDFInput.so");
   strcpy(Config.Pad2, "libDFInput.so");
+  strcpy(Config.Cdr, "libDFCdrom.so");
+  strcpy(Config.Sio1, "libBladeSio1.so");
+  strcpy(Config.BiosDir, BIOS_DIR);
+  strcpy(Config.Bios, "HLE");
+  strcpy(Config.PatchesDir, PATCHES_DIR);
+  Config.Xa = 0;
+  Config.SioIrq = 0;
+  Config.Mdec = 0;
+  Config.PsxAuto = 1;
+  Config.Cdda = 0;
+  Config.SlowBoot = 0;
+  //Config.Dbg = 0;
+  Config.PsxOut = 1;
+  Config.SpuIrq = 0;
+  Config.RCntFix = 0;
+  Config.VSyncWA = 0;
+  Config.NoMemcard = 0;
+  Config.Widescreen = 0;
+  Config.Cpu = 1;
+  Config.PsxType = 0;
+  Config.RewindCount = 0;
+  Config.RewindInterval = 0;
+  Config.AltSpeed1 = 50;
+  Config.AltSpeed2 = 250;
+  Config.HackFix = 0;
+  Config.Debug = 0;
   if (LoadPlugins() == -1)
   {
     std::cout << "Could not load plugins" << std::endl;
     return -1;
   }
+  // Here the window is shown.
   if (OpenPlugins() == -1)
   {
     std::cout << "Could not open plugins" << std::endl;
@@ -117,7 +161,7 @@ int SysInit() {
 	if (Config.PsxOut) { //PSXCPU_LOG generates so much stuff that buffer is necessary
 		const int BUFSZ = 20 * 1024*1024;
 		void* buf = malloc(BUFSZ);
-		setvbuf(emuLog, buf, _IOFBF, BUFSZ);
+		setvbuf(emuLog, (char*) buf, _IOFBF, BUFSZ);
 	} else {
 		setvbuf(emuLog, NULL, _IONBF, 0u);
 	}
@@ -134,6 +178,7 @@ int SysInit() {
 	LoadMcds(Config.Mcd1, Config.Mcd2);	/* TODO Do we need to have this here, or in the calling main() function?? */
 
 	if (Config.Debug) {
+    std::cout << "Starting debugger" << std::endl;
 		StartDebugger();
 	}
 
@@ -212,6 +257,7 @@ void SysCloseLibrary(void *lib) {
 }
 
 void SysUpdate() {
+  std::cout << "SysUpdate!" << std::endl;
   /*
 	PADhandleKey(PAD1_keypressed() );
 	PADhandleKey(PAD2_keypressed() );
@@ -582,3 +628,43 @@ void ClosePlugins() {
 	}
 }
 
+gchar* get_cdrom_label_trim() {
+	char trimlabel[33];
+	int j;
+
+	strncpy(trimlabel, CdromLabel, 32);
+	trimlabel[32] = 0;
+	for (j = 31; j >= 0; j--) {
+		if (trimlabel[j] == ' ')
+			trimlabel[j] = 0;
+		else
+			continue;
+	}
+
+	return g_strdup(trimlabel);
+}
+
+gchar* get_cdrom_label_id(const gchar* suffix) {
+	const u8 lblmax = sizeof(CdromId) + sizeof(CdromLabel) + 20u;
+	//printf("MAx %u\n", lblmax);
+	char buf[lblmax];
+	gchar *trimlabel = get_cdrom_label_trim();
+
+	snprintf(buf, lblmax, "%.32s-%.9s%s", trimlabel, CdromId, suffix);
+
+	g_free(trimlabel);
+
+	if (strlen(buf) <= (2+strlen(dot_extension_cht)))
+		return g_strconcat("psx-default", dot_extension_cht, NULL);
+	else 
+		return g_strdup(buf);
+}
+
+void autoloadCheats() {
+	ClearAllCheats();
+	gchar *chtfile = get_cdrom_label_id(dot_extension_cht);
+	gchar *defaultChtFilePath = g_build_filename (getenv("HOME"), CHEATS_DIR, chtfile, NULL);
+	LoadCheats(defaultChtFilePath); // file existence/access check in LoadCheats()
+	g_free(defaultChtFilePath);
+	g_free(chtfile);
+}
