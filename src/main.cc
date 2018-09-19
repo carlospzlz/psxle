@@ -230,6 +230,12 @@ void *SysLoadLibrary(const char *lib) {
 	return dlopen(lib, RTLD_NOW);
 }
 
+// HERE it is!!
+//
+// #define LoadSym(dest, src, name, checkerr) { \
+//	dest = (src)SysLoadSym(drv, name); \
+//	if (checkerr) { CheckErr(name); } else SysLibError(); \
+// }
 void *SysLoadSym(void *lib, const char *sym) {
 	return dlsym(lib, sym);
 }
@@ -257,7 +263,10 @@ void SysCloseLibrary(void *lib) {
 }
 
 void SysUpdate() {
+  // It must be forwarding the keypressed events, but they have
+  // already been handled by the BIOS
   std::cout << "SysUpdate!" << std::endl;
+  std::cout << PAD1_keypressed() << std::endl;
   /*
 	PADhandleKey(PAD1_keypressed() );
 	PADhandleKey(PAD2_keypressed() );
@@ -513,7 +522,7 @@ int _OpenPlugins() {
 	ret = SPU_open();
 	if (ret < 0) { SysMessage(_("Error opening SPU plugin!")); return -1; }
 	SPU_registerCallback(SPUirq);
-	ret = GPU_open(&gpuDisp, "PCSXR", NULL);
+	ret = GPU_open(&gpuDisp, "PSXLE", NULL);
 	if (ret < 0) { SysMessage(_("Error opening GPU plugin!")); return -1; }
 	ret = PAD1_open(&gpuDisp);
 	ret |= PAD1_init(1); // Allow setting to change during run
