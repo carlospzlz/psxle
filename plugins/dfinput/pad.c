@@ -678,6 +678,18 @@ long PADkeypressed(void) {
 	return s;
 }
 
+void PADpressKey(int pad, int bit) {
+    if (bit < 16) {
+        g.PadState[pad].KeyStatus &= ~(1 << bit);
+    }
+}
+
+void PADreleaseKey(int pad, int bit) {
+    if (bit < 16) {
+        g.PadState[pad].KeyStatus |= (1 << bit);
+    }
+}
+
 void PADregisterVibration(void (*callback)(uint32_t, uint32_t)) {
 	gpuVisualVibration = callback;
 }

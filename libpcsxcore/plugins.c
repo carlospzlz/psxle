@@ -109,6 +109,8 @@ PADclose              PAD1_close;
 PADquery              PAD1_query;
 PADreadPort1          PAD1_readPort1;
 PADkeypressed         PAD1_keypressed;
+PADpressKey           PAD1_pressKey;
+PADreleaseKey         PAD1_releaseKey;
 PADstartPoll          PAD1_startPoll;
 PADpoll               PAD1_poll;
 PADsetSensitive       PAD1_setSensitive;
@@ -483,6 +485,8 @@ void CALLBACK PAD1__about(void) {}
 long CALLBACK PAD1__test(void) { return 0; }
 long CALLBACK PAD1__query(void) { return 3; }
 long CALLBACK PAD1__keypressed() { return 0; }
+long CALLBACK PAD1__pressKey() { return 0; }
+long CALLBACK PAD1__releaseKey() { return 0; }
 void CALLBACK PAD1__registerVibration(void (CALLBACK *callback)(unsigned long, unsigned long)) {}
 void CALLBACK PAD1__registerCursor(void (CALLBACK *callback)(int, int, int)) {}
 
@@ -516,6 +520,8 @@ static int LoadPAD1plugin(const char *PAD1dll) {
 	LoadPad1Sym0(test, "PADtest");
 	LoadPad1Sym0(about, "PADabout");
 	LoadPad1Sym0(keypressed, "PADkeypressed");
+	LoadPad1Sym0(pressKey, "PADpressKey");
+	LoadPad1Sym0(releaseKey, "PADreleaseKey");
 	LoadPad1Sym0(startPoll, "PADstartPoll");
 	LoadPad1Sym0(poll, "PADpoll");
 	LoadPad1SymN(setSensitive, "PADsetSensitive");

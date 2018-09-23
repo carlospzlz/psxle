@@ -267,6 +267,8 @@ unsigned char PADpoll(unsigned char value);
 long PADreadPort1(PadDataS *pad);
 long PADreadPort2(PadDataS *pad);
 long PADkeypressed(void);
+void PADpressKey(int, int);
+void PADreleaseKey(int, int);
 long PADconfigure(void);
 void PADabout(void);
 long PADtest(void);
