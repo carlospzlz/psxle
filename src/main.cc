@@ -20,6 +20,7 @@
 #include <regex.h>
 #include <signal.h>
 #include <string>
+#include <vector>
 #include <gtk/gtk.h>
 #include <sys/stat.h>
 
@@ -262,11 +263,66 @@ void SysCloseLibrary(void *lib) {
 	dlclose(lib);
 }
 
+enum {
+	DKEY_SELECT = 0,
+	DKEY_L3,
+	DKEY_R3,
+	DKEY_START,
+	DKEY_UP,
+	DKEY_RIGHT,
+	DKEY_DOWN,
+	DKEY_LEFT,
+	DKEY_L2,
+	DKEY_R2,
+	DKEY_L1,
+	DKEY_R1,
+	DKEY_TRIANGLE,
+	DKEY_CIRCLE,
+	DKEY_CROSS,
+	DKEY_SQUARE,
+	DKEY_ANALOG,
+
+	DKEY_TOTAL
+};
+
+static const std::vector<std::string> PSX_KEYS = {
+  "SELECT",
+  "L3",
+  "R3",
+  "START",
+  "UP",
+  "RIGHT",
+  "DOWN",
+  "LEFT",
+  "L2",
+  "R2",
+  "L1",
+  "R1",
+  "TRIANGLE",
+  "CIRCLE",
+  "CROSS",
+  "SQUARE",
+  "ANALOG",
+};
+
 void SysUpdate() {
   // It must be forwarding the keypressed events, but they have
   // already been handled by the BIOS
-  std::cout << "SysUpdate!" << std::endl;
-  std::cout << PAD1_keypressed() << std::endl;
+  //std::cout << "SysUpdate!" << std::endl;
+  static int count = 1;
+  static int key;
+  if (count % 2 == 0)
+  {
+    key = rand() % 16;
+    std::cout << "Pressing " << PSX_KEYS[key] << std::endl;
+    PAD1_pressKey(0, key);
+  }
+  else if (count % 100 == 1)
+  {
+    std::cout << "Releasing " << PSX_KEYS[key] << std::endl;
+    PAD1_releaseKey(0, key);
+  }
+  ++count;
   /*
 	PADhandleKey(PAD1_keypressed() );
 	PADhandleKey(PAD2_keypressed() );
