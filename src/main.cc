@@ -72,9 +72,9 @@ unsigned long gpuDisp;
 
 int main(int argc, char* args[])
 {
-  if (argc < 2)
+  if (argc < 3)
   {
-    std::cout << "iso?" << std::endl;
+    std::cout << "iso? state?" << std::endl;
     return -1;
   }
   std::string iso_filename = args[1];
@@ -144,6 +144,7 @@ int main(int argc, char* args[])
     std::cout << "Could not load CD-ROM" << std::endl;
   }
   std::cout << "Executing ..." << std::endl;
+  LoadState(args[2]);
 	psxCpu->Execute();
   return 0;
 }
@@ -305,6 +306,9 @@ static const std::vector<std::string> PSX_KEYS = {
   "ANALOG",
 };
 
+static int valid_actions[14] = {
+  1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
+
 void SysUpdate() {
   // It must be forwarding the keypressed events, but they have
   // already been handled by the BIOS
@@ -313,14 +317,14 @@ void SysUpdate() {
   static int key;
   if (count % 2 == 0)
   {
-    key = rand() % 16;
+    key = rand() % 14;
     std::cout << "Pressing " << PSX_KEYS[key] << std::endl;
-    PAD1_pressKey(0, key);
+    PAD1_pressKey(0, valid_actions[key]);
   }
-  else if (count % 100 == 1)
+  else if (count % 2 == 1)
   {
     std::cout << "Releasing " << PSX_KEYS[key] << std::endl;
-    PAD1_releaseKey(0, key);
+    PAD1_releaseKey(0, valid_actions[key]);
   }
   ++count;
   /*
