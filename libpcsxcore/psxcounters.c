@@ -81,11 +81,10 @@ static const u16 JITTER_FLAGS     = (Rc2OneEighthClock|RcIrqRegenerate|RcCountTo
 
 static Rcnt rcnts[ CounterQuantity ];
 
-static u32 hSyncCount = 0;
 static u32 spuSyncCount = 0;
 
 u32 HSyncTotal[PSX_TYPE_PAL+1]; // 2
-u32 psxNextCounter = 0, psxNextsCounter = 0;
+u32 psxNextCounter = 0, psxNextsCounter = 0, hSyncCount = 0;
 
 /******************************************************************************/
 
@@ -251,6 +250,7 @@ void psxRcntReset( u32 index )
 
 void psxRcntUpdate()
 {
+    //printf("psxRcntUpdate %d\n", hSyncCount);
     u32 cycle;
 
     cycle = psxRegs.cycle;
@@ -330,6 +330,7 @@ void psxRcntUpdate()
 
 void psxRcntWcount( u32 index, u32 value )
 {
+    //printf("psxRcntWcount\n");
     verboseLog( 2, "[RCNT %i] wcount: %x\n", index, value );
 
     psxRcntUpdate();
@@ -340,6 +341,7 @@ void psxRcntWcount( u32 index, u32 value )
 
 void psxRcntWmode( u32 index, u32 value )
 {
+    //printf("psxRcntWmode\n");
     verboseLog( 1, "[RCNT %i] wmode: %x\n", index, value );
 
     psxRcntUpdate();
@@ -446,6 +448,7 @@ u32 psxRcntRcount( u32 index )
 
 u32 psxRcntRmode( u32 index )
 {
+    //printf("psxRcnRmode\n");
     u16 mode;
 
     psxRcntUpdate();

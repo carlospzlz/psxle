@@ -60,6 +60,7 @@ int xv_id = -1;
 int use_yuv = False;
 int xv_vsync = False;
 
+// SHared Memory info.
 XShmSegmentInfo shminfo;
 int finalw,finalh;
 
@@ -1395,6 +1396,7 @@ unsigned char *pBackBuffer = 0;
 
 void BlitScreen32(unsigned char *surf, int32_t x, int32_t y)
 {
+ printf("BlitScreen32\n");
  unsigned char *pD;
  unsigned int startxy;
  uint32_t lu;
@@ -1464,6 +1466,7 @@ void BlitScreen32(unsigned char *surf, int32_t x, int32_t y)
 
 void BlitToYUV(unsigned char * surf,int32_t x,int32_t y)
 {
+ printf("BlitToYUV\n");
  unsigned char * pD;
  unsigned int startxy;
  uint32_t lu;unsigned short s;
@@ -1547,6 +1550,8 @@ void BlitToYUV(unsigned char * surf,int32_t x,int32_t y)
        G = (s >> 2) &0xf8;
        B = (s >> 7) &0xf8;
 
+	   printf("R = %d, G = %d, B = %d", R, G, B);
+
        destpix[row] = rgb_to_yuv(R, G, B);
 
       }
@@ -1623,6 +1628,7 @@ void DoBufferSwap(void)
 	unsigned int dstx, dsty;
 	unsigned int _d, _w, _h;	//don't care about _d
 
+	// Dimensions are changing here! Image gets bigger than 128x96
 	finalw = PSXDisplay.DisplayMode.x;
 	finalh = PSXDisplay.DisplayMode.y;
 
@@ -1633,6 +1639,7 @@ void DoBufferSwap(void)
 
 	if(use_yuv) {
 		if (iUseNoStretchBlt==0 || finalw > 320 || finalh > 256) {
+		    // shminfo.shmaddr gets populated here.
 			BlitToYUV((unsigned char *)shminfo.shmaddr, PSXDisplay.DisplayPosition.x, PSXDisplay.DisplayPosition.y);
 			finalw <<= 1;
 		} else {
@@ -1650,6 +1657,7 @@ void DoBufferSwap(void)
 	XGetGeometry(display, window, &_dw, (int *)&_d, (int *)&_d, &_w, &_h, &_d, &_d);
 	xvi = XvShmCreateImage(display, xv_port, xv_id, 0, finalw, finalh, &shminfo);
 
+	// Here is the actual image data.
 	xvi->data = shminfo.shmaddr;
 
 	if (!screen) screen=DefaultScreenOfDisplay(display);
@@ -1676,6 +1684,8 @@ void DoBufferSwap(void)
        iRumbleTime--;
     }
 */
+	printf("Final size: %d x %d\n", finalw, finalh);
+	// THIS IS THE PUT IMAGE CALL THAT DRAWS STUFF!
 	XvShmPutImage(display, xv_port, window, hGC, xvi,
 		0,0,		//src x,y
 		finalw,finalh,	//src w,h
@@ -1683,6 +1693,7 @@ void DoBufferSwap(void)
 		_w, _h,		//dst w,h
 		1
 		);
+	// This display call doesn't draw anything..
 	DisplayPic();
 
 	if(ulKeybits&KEY_SHOWFPS) //DisplayText();   c            // paint menu text
@@ -1816,6 +1827,7 @@ void CloseDisplay(void)
 
 void CreatePic(unsigned char * pMem)
 {
+ printf("CreatePic");
  unsigned char * p=(unsigned char *)malloc(128*96*4);
  unsigned char * ps; int x,y;
 
@@ -1888,20 +1900,28 @@ void DestroyPic(void)
 
 void DisplayPic(void)
 {
+ /*
+  printf("DisplayPic\n");
   static int mapped = 0;
   if (XPimage) {
     if (!mapped) {
+	  printf("XMapWindow\n");
       XMapWindow(display, overlay);
       mapped = 1;
     }
-    XPutImage(display,overlay,hGC, XPimage,
-	      0,0, 0,0, 128,96);
+	printf("XPutImage\n");
+    //XPutImage(display,overlay,hGC, XPimage,
+	//      0,0, 0,0, 128,96);
   } else {
+    printf("wtf?\n");
+	// No XPimage and it's not mapped!
     if (mapped) {
+	 printf("XUnmapWindow\n");
      XUnmapWindow(display, overlay);
      mapped = 0;
     }
   }
+  */
 }
 
 void ShowGpuPic(void)

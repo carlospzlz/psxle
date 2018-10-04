@@ -593,6 +593,7 @@ long CALLBACK GPUshutdown()                            // GPU SHUTDOWN
 
 void updateDisplay(void)                               // UPDATE DISPLAY
 {
+ printf("updateDisplay\n");
  if(PSXDisplay.Disabled)                               // disable?
   {
    DoClearFrontBuffer();                               // -> clear frontbuffer
@@ -940,12 +941,14 @@ void CALLBACK GPUcursor(int iPlayer,int x,int y)
 
 void CALLBACK GPUupdateLace(void)                      // VSYNC
 {
+ printf("GPUupdateLace\n");
  if(!(dwActFixes&1))
   lGPUstatusRet^=0x80000000;                           // odd/even bit
 
  if(!(dwActFixes&32))                                  // std fps limitation?
   CheckFrameRate();
 
+ // OK, updateDisplay is drawing the image!
  if(PSXDisplay.Interlaced)                             // interlaced mode?
   {
    if(bDoVSyncUpdate && PSXDisplay.DisplayMode.x>0 && PSXDisplay.DisplayMode.y>0)
@@ -958,13 +961,17 @@ void CALLBACK GPUupdateLace(void)                      // VSYNC
    if(dwActFixes&64)                                   // lazy screen update fix
     {
      if(bDoLazyUpdate && !UseFrameSkip)
+	 {
       updateDisplay();
+	 }
      bDoLazyUpdate=FALSE;
     }
    else
     {
-     if(bDoVSyncUpdate && !UseFrameSkip)               // some primitives drawn?
+     if(bDoVSyncUpdate && !UseFrameSkip)                 // some primitives drawn?
+	 {
       updateDisplay();                                 // -> update display
+	 }
     }
   }
 
@@ -2221,6 +2228,7 @@ void CALLBACK GPUgetScreenPic(unsigned char * pMem)
 
 void GPUgetScreenPic(unsigned char * pMem)
 {
+  printf("GPUgetScreenPic\n");
   unsigned char *pf=pMem;
   unsigned char *buf, *line, *pD;
 
@@ -2265,6 +2273,7 @@ void GPUgetScreenPic(unsigned char * pMem)
  /////////////////////////////////////////////////////////////////////
  // generic number/border painter
 
+ /*
  unsigned short c;
  pf=pMem+(103*3);                                      // offset to number rect
 
@@ -2296,6 +2305,7 @@ void GPUgetScreenPic(unsigned char * pMem)
    *(pf+(127*3))=0xff;*pf++=0xff;
    pf+=127*3;                                          // offset to next line
   }
+  */
 }
 
 #endif
@@ -2310,6 +2320,7 @@ void GPUgetScreenPic(unsigned char * pMem)
 
 void CALLBACK GPUshowScreenPic(unsigned char * pMem)
 {
+ printf("GPUshowScreenPic\n");
  DestroyPic();                                         // destroy old pic data
  if(pMem==0) return;                                   // done
  CreatePic(pMem);                                      // create new pic... don't free pMem or something like that... just read from it

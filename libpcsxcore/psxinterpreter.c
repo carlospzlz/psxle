@@ -1081,8 +1081,12 @@ static void intReset() {
 }
 
 static void intExecute() {
-	for (;;) 
+	for (;;)
+	{
+	    //printf("INSTRUCTION BEGINS\n");
 		execI();
+	    //printf("INSTRUCTION ENDS\n");
+	}
 }
 
 static void intExecuteBlock() {
