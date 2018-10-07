@@ -354,8 +354,9 @@ void SysUpdate() {
   }
   ++count;
   //std::cout << "Getting screen pic" << std::endl;
-  unsigned char gpu_picture[GPU_PICTURE_SIZE]; // 128 * 96 * 3
-  GPU_getScreenPic(gpu_picture);
+  unsigned char gpu_picture[736 * 480 * 3]; // 128 * 96 * 3
+  //GPU_getScreenPic(gpu_picture);
+  GPU_getPSXScreen(gpu_picture);
   std::ofstream fout;
   fout.open("screen_pic");
   fout.write((char*) gpu_picture, sizeof(gpu_picture));

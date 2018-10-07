@@ -50,6 +50,7 @@ GPUdisplayText        GPU_displayText;
 GPUmakeSnapshot       GPU_makeSnapshot;
 GPUfreeze             GPU_freeze;
 GPUgetScreenPic       GPU_getScreenPic;
+GPUgetPSXScreen       GPU_getPSXScreen;
 GPUshowScreenPic      GPU_showScreenPic;
 GPUclearDynarec       GPU_clearDynarec;
 GPUhSync              GPU_hSync;
@@ -259,6 +260,7 @@ static int LoadGPUplugin(const char *GPUdll) {
 	LoadGpuSym0(makeSnapshot, "GPUmakeSnapshot");
 	LoadGpuSym1(freeze, "GPUfreeze");
 	LoadGpuSym0(getScreenPic, "GPUgetScreenPic");
+	LoadGpuSym1(getPSXScreen, "GPUgetPSXScreen");
 	LoadGpuSym0(showScreenPic, "GPUshowScreenPic");
 	LoadGpuSym0(clearDynarec, "GPUclearDynarec");
     LoadGpuSym0(hSync, "GPUhSync");

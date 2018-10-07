@@ -2235,37 +2235,48 @@ void GPUgetScreenPic(unsigned char * pMem)
   int w = PreviousPSXDisplay.Range.x1, h = PreviousPSXDisplay.DisplayMode.y;
   int x, y;
   float XS = w / 128.0, YS = h / 96.0;
+  printf("w = %d, h = %d\n", w, h);
+  printf("XS = %f, YS = %f\n", XS, YS);
+  printf("Range.x1 = %d, DisplayPosition.y = %d\n",
+	     PSXDisplay.Range.x1, PSXDisplay.DisplayPosition.y);
   line = pf;
   for (y = 0; y < 96; ++y) {
     for (x = 0; x < 128; ++x) {
       float r = 0, g = 0, b = 0, sr, sg, sb;
       uint32_t cnt = 0, i, j;
       for (j = 0; j < (int)((y+1)*YS) - (int)(y*YS); ++j) {
-	for (i = 0; i < (int)((x+1)*XS) - (int)(x*XS); ++i) {
-	  pD = (unsigned char *)&psxVuw[(int)(y*YS +
-	      PSXDisplay.DisplayPosition.y - 1 + j) * 1024 +
-	      PSXDisplay.DisplayPosition.x] +
-	      (PSXDisplay.RGB24 ? 3 : 2) * (int)(x*XS + i);
-	  if (PSXDisplay.RGB24) {
-	    uint32_t lu = *(uint32_t *)pD;
-	    sr = RED(lu);
-	    sg = GREEN(lu);
-	    sb = BLUE(lu);
-	  } else {
-	    int32_t color = GETLE16(pD);
-	    sr = (color << 3) & 0xf1;
-	    sg = (color >> 2) & 0xf1;
-	    sb = (color >> 7) & 0xf1;
-	  }
-	  r += sr * sr;
-	  g += sg * sg;
-	  b += sb * sb;
-	  cnt += 1;
+		for (i = 0; i < (int)((x+1)*XS) - (int)(x*XS); ++i) {
+		  pD = (unsigned char *)&psxVuw[(int)(y*YS +
+			  PSXDisplay.DisplayPosition.y - 1 + j) * 1024 +
+			  PSXDisplay.DisplayPosition.x] +
+			  (PSXDisplay.RGB24 ? 3 : 2) * (int)(x*XS + i);
+		  /*
+		      printf("y = %d, x = %d, j = %u, i = %u, [] = %d, + = %d\n",
+				 y, x, j, i,
+				 (int)(y*YS + PSXDisplay.DisplayPosition.y - 1 + j) * 1024 + PSXDisplay.DisplayPosition.x,
+			     (PSXDisplay.RGB24 ? 3 : 2) * (int)(x*XS + i));
+		  */
+		  if (PSXDisplay.RGB24) {
+			uint32_t lu = *(uint32_t *)pD;
+			sr = RED(lu);
+			sg = GREEN(lu);
+			sb = BLUE(lu);
+		  } else {
+			int32_t color = GETLE16(pD);
+			sr = (color << 3) & 0xf1;
+			sg = (color >> 2) & 0xf1;
+			sb = (color >> 7) & 0xf1;
+		  }
+		  r += sr * sr;
+		  g += sg * sg;
+		  b += sb * sb;
+		  cnt += 1;
 	}
 	line[x * 3 + 2] = sqrt(r / cnt);
 	line[x * 3 + 1] = sqrt(g / cnt);
 	line[x * 3 + 0] = sqrt(b / cnt);
-      }
+    }
+	//getchar();
     }
     line += 128 * 3;
   }
@@ -2309,6 +2320,177 @@ void GPUgetScreenPic(unsigned char * pMem)
 }
 
 #endif
+
+void GPUgetPSXScreen(unsigned char* pMem)
+{
+  // UNDERSTAND ALL THIS SHIT!
+  //int w = PreviousPSXDisplay.DisplayMode.x, h = PreviousPSXDisplay.DisplayMode.y;
+  //int w1 = PSXDisplay.DisplayMode.x, h1 = PSXDisplay.DisplayMode.y;
+  //printf("GPUgetPSXScreen: w = %d, h = %d\n", w, h);
+  //printf("GPUgetPSXScreen: w = %d, h = %d\n", w1, h1);
+  //GPUgetScreenPic(pMem);
+  //return;
+  unsigned char* pixelData;
+  int w = PreviousPSXDisplay.Range.x1;
+  int h = PreviousPSXDisplay.DisplayMode.y;
+  printf("w = %d, h = %d\n", w, h);
+  unsigned char* line = pMem;
+  for (int y = 0; y < h; ++y)
+  {
+   for (int x = 0; x < w; ++x)
+   {
+	pixelData = (unsigned char*) &psxVuw[y * 1024] + x * 2;
+	int32_t color = GETLE16(pixelData);
+	float r = (color << 3) & 0xf1;
+	float g = (color >> 2) & 0xf1;
+	float b = (color >> 7) & 0xf1;
+	line[x * 3] = b;
+	line[x * 3 + 1] = g;
+	line[x * 3 + 2] = r;
+   }
+   line += 736 * 3;
+  }
+
+ /*
+  unsigned char *pf=pMem;
+  unsigned char *buf, *line, *pD;
+
+  int w = PreviousPSXDisplay.Range.x1, h = PreviousPSXDisplay.DisplayMode.y;
+  int x, y;
+  int newW = 2*128, newH = 2*96;
+  float XS = w / (float)newW, YS = h / (float)newH;
+  line = pf;
+  for (y = 0; y < 96; ++y) {
+    for (x = 0; x < 128; ++x) {
+      float r = 0, g = 0, b = 0, sr, sg, sb;
+      uint32_t cnt = 0, i, j;
+      for (j = 0; j < (int)((y+1)*YS) - (int)(y*YS); ++j) {
+		for (i = 0; i < (int)((x+1)*XS) - (int)(x*XS); ++i) {
+		  pD = (unsigned char *)&psxVuw[(int)(y*YS +
+			  PSXDisplay.DisplayPosition.y - 1 + j) * 1024 +
+			  PSXDisplay.DisplayPosition.x] +
+			  (PSXDisplay.RGB24 ? 3 : 2) * (int)(x*XS + i);
+		  if (PSXDisplay.RGB24) {
+			uint32_t lu = *(uint32_t *)pD;
+			sr = RED(lu);
+			sg = GREEN(lu);
+			sb = BLUE(lu);
+		  } else {
+			int32_t color = GETLE16(pD);
+			sr = (color << 3) & 0xf1;
+			sg = (color >> 2) & 0xf1;
+			sb = (color >> 7) & 0xf1;
+		  }
+		  r += sr * sr;
+		  g += sg * sg;
+		  b += sb * sb;
+		  cnt += 1;
+	}
+	line[x * 3 + 2] = sqrt(r / cnt);
+	line[x * 3 + 1] = sqrt(g / cnt);
+	line[x * 3 + 0] = sqrt(b / cnt);
+      }
+    }
+    line += newW * 3;
+  }
+  */
+
+  /*
+ unsigned char* surf = pMem;
+ int32_t x = 0, y = 0;
+ unsigned char * pD;
+ unsigned int startxy;
+ uint32_t lu;unsigned short s;
+ unsigned short row,column;
+ unsigned short dx = PreviousPSXDisplay.Range.x1;
+ unsigned short dy = PreviousPSXDisplay.DisplayMode.y;
+ int R,G,B;
+
+ int32_t lPitch = PSXDisplay.DisplayMode.x << 2;
+ uint32_t *destpix;
+
+ if (PreviousPSXDisplay.Range.y0) // centering needed?
+  {
+   for (column = 0; column < (PreviousPSXDisplay.Range.y0 >> 1); column++)
+    {
+     destpix = (uint32_t *)(surf + column * lPitch);
+     for (row = 0; row < dx; row++)
+     {
+      destpix[row] = (4 << 24) | (128 << 16) | (4 << 8) | 128;
+     }
+    }
+
+   dy -= PreviousPSXDisplay.Range.y0;
+   surf += (PreviousPSXDisplay.Range.y0 >> 1) * lPitch;
+
+   for (column = 0; column < (PreviousPSXDisplay.Range.y0 + 1) >> 1; column++)
+    {
+     destpix = (uint32_t *)(surf + (dy + column) * lPitch);
+     for (row = 0; row < dx; row++)
+     {
+      destpix[row] = (4 << 24) | (128 << 16) | (4 << 8) | 128;
+     }
+    }
+  }
+
+ if (PreviousPSXDisplay.Range.x0)
+  {
+   for (column = 0; column < dy; column++)
+    {
+     destpix = (uint32_t *)(surf + (column * lPitch));
+     for (row = 0; row < PreviousPSXDisplay.Range.x0; row++)
+      {
+       destpix[row] = (4 << 24) | (128 << 16) | (4 << 8) | 128;
+      }
+    }
+   surf += PreviousPSXDisplay.Range.x0 << 2;
+  }
+
+ if (PSXDisplay.RGB24)
+  {
+   for (column = 0; column < dy; column++)
+    {
+     startxy = (1024 * (column + y)) + x;
+     pD = (unsigned char *)&psxVuw[startxy];
+     destpix = (uint32_t *)(surf + (column * lPitch));
+     for (row = 0; row < dx; row++)
+      {
+       lu = *((uint32_t *)pD);
+
+       R = RED(lu);
+       G = GREEN(lu);
+       B = BLUE(lu);
+
+       destpix[row] = rgb_to_yuv(R, G, B);
+
+       pD += 3;
+      }
+    }
+  }
+ else
+  {
+   for (column = 0; column < dy; column++)
+    {
+     startxy = (1024 * (column + y)) + x;
+     destpix = (uint32_t *)(surf + (column * lPitch));
+     for (row = 0; row < dx; row++)
+      {
+       s = GETLE16(&psxVuw[startxy++]);
+
+       R = (s << 3) &0xf8;
+       G = (s >> 2) &0xf8;
+       B = (s >> 7) &0xf8;
+
+	   //printf("R = %d, G = %d, B = %d", R, G, B);
+
+       destpix[row] = rgb_to_yuv(R, G, B);
+
+      }
+    }
+  }
+ */
+
+}
 
 ////////////////////////////////////////////////////////////////////////
 // func will be called with 128x96x3 BGR data.

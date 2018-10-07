@@ -89,6 +89,7 @@ typedef struct {
 } GPUFreeze_t;
 typedef long (CALLBACK* GPUfreeze)(uint32_t, GPUFreeze_t *);
 typedef long (CALLBACK* GPUgetScreenPic)(unsigned char *);
+typedef long (CALLBACK* GPUgetPSXScreen)(unsigned char *);
 typedef long (CALLBACK* GPUshowScreenPic)(unsigned char *);
 typedef void (CALLBACK* GPUclearDynarec)(void (CALLBACK *callback)(void));
 typedef void (CALLBACK* GPUhSync)(int);
@@ -119,6 +120,7 @@ extern GPUdisplayText   GPU_displayText;
 extern GPUmakeSnapshot  GPU_makeSnapshot;
 extern GPUfreeze        GPU_freeze;
 extern GPUgetScreenPic  GPU_getScreenPic;
+extern GPUgetPSXScreen  GPU_getPSXScreen;
 extern GPUshowScreenPic GPU_showScreenPic;
 extern GPUclearDynarec  GPU_clearDynarec;
 extern GPUhSync         GPU_hSync;

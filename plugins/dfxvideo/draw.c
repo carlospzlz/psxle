@@ -1466,7 +1466,7 @@ void BlitScreen32(unsigned char *surf, int32_t x, int32_t y)
 
 void BlitToYUV(unsigned char * surf,int32_t x,int32_t y)
 {
- printf("BlitToYUV\n");
+ printf("BlitToYUV: X = %d, Y = %d\n", x, y);
  unsigned char * pD;
  unsigned int startxy;
  uint32_t lu;unsigned short s;
@@ -1550,7 +1550,7 @@ void BlitToYUV(unsigned char * surf,int32_t x,int32_t y)
        G = (s >> 2) &0xf8;
        B = (s >> 7) &0xf8;
 
-	   printf("R = %d, G = %d, B = %d", R, G, B);
+	   //printf("R = %d, G = %d, B = %d", R, G, B);
 
        destpix[row] = rgb_to_yuv(R, G, B);
 
