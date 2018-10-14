@@ -35,12 +35,24 @@ find_library(RT_LIB rt REQUIRED)
 find_package(X11 REQUIRED)
 include_directories(${X11_XTest_INCLUDE_PATH})
 
-set(SRCS
- src/main.cc
-)
-add_executable(psxle ${SRCS} )
+# This adds double, find a better way.
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
 
+# Main program to execute and test.
+add_executable(psxle src/main.cc )
 target_link_libraries(psxle pcsxcore ${GTK_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${ZLIB_LIBRARIES} ${RT_LIB} ${DL_LIB} ${X11_XTest_LIB})
+
+# Shared Library.
+set(SRCS
+ psxle_python_interface/psxle_c_wrapper.cc
+ src/psxle_interface.cc
+ src/log.cc
+)
+add_library(psxle_c SHARED ${SRCS})
+target_link_libraries(psxle_c pcsxcore )
+set_target_properties(psxle_c PROPERTIES LIBRARY_OUTPUT_DIRECTORY psxle_python_interface)
+configure_file(psxle_python_interface/psxle_python_interface.py
+               psxle_python_interface/psxle_python_interface.py COPYONLY)
 
 # Components.
 add_subdirectory(libpcsxcore)
