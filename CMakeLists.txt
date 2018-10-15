@@ -35,8 +35,8 @@ find_library(RT_LIB rt REQUIRED)
 find_package(X11 REQUIRED)
 include_directories(${X11_XTest_INCLUDE_PATH})
 
-# This adds double, find a better way.
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
+# Needed for the object files in libpcsxcore.a
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # Main program to execute and test.
 add_executable(psxle src/main.cc )
