@@ -1,4 +1,4 @@
-# The PSX Learning Environment
+# The PlayStation X Learning Environment
 _Project under construction_
 
 The PSX Learning Environment (PSXLE) is a project under construction in a very early stage.
