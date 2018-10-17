@@ -47,6 +47,7 @@ set(SRCS
  psxle_python_interface/psxle_c_wrapper.cc
  src/psxle_interface.cc
  src/log.cc
+ src/linuxSystem.cc
 )
 add_library(psxle_c SHARED ${SRCS})
 target_link_libraries(psxle_c pcsxcore )

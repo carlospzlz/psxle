@@ -593,7 +593,7 @@ long CALLBACK GPUshutdown()                            // GPU SHUTDOWN
 
 void updateDisplay(void)                               // UPDATE DISPLAY
 {
- printf("updateDisplay\n");
+ //printf("updateDisplay\n");
  if(PSXDisplay.Disabled)                               // disable?
   {
    DoClearFrontBuffer();                               // -> clear frontbuffer
@@ -941,7 +941,7 @@ void CALLBACK GPUcursor(int iPlayer,int x,int y)
 
 void CALLBACK GPUupdateLace(void)                      // VSYNC
 {
- printf("GPUupdateLace\n");
+ //printf("GPUupdateLace\n");
  if(!(dwActFixes&1))
   lGPUstatusRet^=0x80000000;                           // odd/even bit
 

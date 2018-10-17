@@ -167,8 +167,15 @@ int main(int argc, char* args[])
     //printf("COUNTER %u\n", hSyncCount);
     if (hSyncCount < previousHSyncCount)
     {
-      printf("CYCLE!\n");
-      std::cin.get();
+      // This conforms one cycle.
+      //         -> Action
+      //   Agent
+      //         <- Score
+      //printf("CYCLE!\n");
+      //std::cin.get();
+      // The agent should act here. [pressKey/releaseKey]
+      //PAD1_pressKey(0, valid_actions[key]);
+      //PAD1_releaseKey(0, valid_actions[key]);
     }
     previousHSyncCount = hSyncCount;
   }
@@ -332,28 +339,31 @@ static const std::vector<std::string> PSX_KEYS = {
   "ANALOG",
 };
 
-static int valid_actions[14] = {
+static int legal_action_set[14] = {
   1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
 
 void SysUpdate() {
-  // It must be forwarding the keypressed events, but they have
-  // already been handled by the BIOS
-  //std::cout << "SysUpdate!" << std::endl;
+  // Press random key.
+  // This should be how the agent acts on the environment.
   static int count = 1;
   static int key;
   if (count % 2 == 0)
   {
-    key = rand() % 14;
-    //std::cout << "Pressing " << PSX_KEYS[key] << std::endl;
-    PAD1_pressKey(0, valid_actions[key]);
+    key = legal_action_set[rand() % 14];
+    std::cout << "Pressing " << PSX_KEYS[key] << std::endl;
+    PAD1_pressKey(0, key);
   }
   else if (count % 2 == 1)
   {
     //std::cout << "Releasing " << PSX_KEYS[key] << std::endl;
-    PAD1_releaseKey(0, valid_actions[key]);
+    PAD1_releaseKey(0, key);
   }
   ++count;
-  //std::cout << "Getting screen pic" << std::endl;
+
+  /*
+  // The following block of code demnstrates how to extract screen image.
+  // This would be environment that the agent sees.
+  std::cout << "Getting screen pic" << std::endl;
   unsigned char gpu_picture[386 * 480 * 3]; // 128 * 96 * 3
   //GPU_getScreenPic(gpu_picture);
   GPU_getPSXScreen(gpu_picture);
@@ -361,7 +371,10 @@ void SysUpdate() {
   fout.open("screen_pic");
   fout.write((char*) gpu_picture, sizeof(gpu_picture));
   fout.close();
+  */
+
   /*
+  // Handling user input.
 	PADhandleKey(PAD1_keypressed() );
 	PADhandleKey(PAD2_keypressed() );
 

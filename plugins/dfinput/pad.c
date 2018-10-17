@@ -679,7 +679,7 @@ long PADkeypressed(void) {
 }
 
 void PADpressKey(int pad, int bit) {
-    printf("PADpressKey\n");
+    //printf("PADpressKey\n");
     if (bit < 16) {
         g.PadState[pad].KeyStatus &= ~(1 << bit);
     }

@@ -60,7 +60,7 @@ int xv_id = -1;
 int use_yuv = False;
 int xv_vsync = False;
 
-// SHared Memory info.
+// Shared Memory info.
 XShmSegmentInfo shminfo;
 int finalw,finalh;
 
@@ -1466,7 +1466,7 @@ void BlitScreen32(unsigned char *surf, int32_t x, int32_t y)
 
 void BlitToYUV(unsigned char * surf,int32_t x,int32_t y)
 {
- printf("BlitToYUV: X = %d, Y = %d\n", x, y);
+ //printf("BlitToYUV: X = %d, Y = %d\n", x, y);
  unsigned char * pD;
  unsigned int startxy;
  uint32_t lu;unsigned short s;
@@ -1684,7 +1684,7 @@ void DoBufferSwap(void)
        iRumbleTime--;
     }
 */
-	printf("Final size: %d x %d\n", finalw, finalh);
+	//printf("Final size: %d x %d\n", finalw, finalh);
 	// THIS IS THE PUT IMAGE CALL THAT DRAWS STUFF!
 	XvShmPutImage(display, xv_port, window, hGC, xvi,
 		0,0,		//src x,y
@@ -1827,7 +1827,7 @@ void CloseDisplay(void)
 
 void CreatePic(unsigned char * pMem)
 {
- printf("CreatePic");
+ //printf("CreatePic");
  unsigned char * p=(unsigned char *)malloc(128*96*4);
  unsigned char * ps; int x,y;
 
