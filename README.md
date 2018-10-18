@@ -12,7 +12,6 @@ the work at some point. Currently, a toy executable can be built that sends rand
 _You will need to download the iso files for the corresponding games_
 
 ### Build
-
 ```
 $ git clone git@github.com:carlospzlz/psxle.git
 $ cd psxle
@@ -23,7 +22,6 @@ $ make -j2
 ```
 
 ### Symlink plugins
-
 ```
 $ mkdir -p ~/.psxle/plugins
 $ ln -s $PWD/plugins/dfxvideo/libDFXVideo.so ~/.psxle/plugins/libDFXVideo.so
@@ -32,7 +30,6 @@ $ ln -s $PWD/plugins/dfsound/libDFSound.so ~/.psxle/plugins/libDFSound.so
 ```
 
 ### Run
-
 ```
 $ ./psxle [ISO_FILE] [GAME_STATE]
 ```
