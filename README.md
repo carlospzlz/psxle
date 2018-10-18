@@ -8,8 +8,10 @@ and is built on top of the PlayStation emulator [pcsxr](https://archive.codeplex
 The development of this project is temporarily paused, so the author left it in a provisional state hoping to continue
 the work at some point. Currently, a toy executable can be built that sends random input actions to the emulator.
 
-## Quick start ##
+## Quick start
 _You will need to download the iso files for the corresponding games_
+
+### Build
 
 ```
 $ git clone git@github.com:carlospzlz/psxle.git
@@ -18,13 +20,28 @@ $ mkdir build
 $ cd build
 $ cmake ..
 $ make -j2
-$ ./psxle <iso_file> <game_state>
 ```
+
+### Symlink plugins
+
+```
+$ mkdir -p ~/.psxle/plugins
+$ ln -s $PWD/plugins/dfxvideo/libDFXVideo.so ~/.psxle/plugins/libDFXVideo.so
+$ ln -s $PWD/plugins/dfinput/libDFInput.so ~/.psxle/plugins/libDFInput.so
+$ ln -s $PWD/plugins/dfsound/libDFSound.so ~/.psxle/plugins/libDFSound.so
+```
+
+### Run
+
+```
+$ ./psxle [ISO_FILE] [GAME_STATE]
+```
+
 ---
 **NOTE**
 
-**iso_file:** A PlayStation iso file that _pcsxr_ can read.<br/>
-**game_state:** A game state saved in _pcsxr_ (some states are provided in `resources/game_states`)
+**ISO_FILE:** A PlayStation iso file that _pcsxr_ can read.<br/>
+**GAME_STATE:** A game state saved in _pcsxr_ (some states are provided in `resources/game_states`)
 
 ---
 
