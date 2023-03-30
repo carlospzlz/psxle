@@ -35,12 +35,15 @@ find_library(RT_LIB rt REQUIRED)
 find_package(X11 REQUIRED)
 include_directories(${X11_XTest_INCLUDE_PATH})
 
+find_package(HarfBuzz REQUIRED)
+include_directories(${HarfBuzz_INCLUDE_DIR})
+
 # Needed for the object files in libpcsxcore.a
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # Main program to execute and test.
 add_executable(psxle src/main.cc )
-target_link_libraries(psxle pcsxcore ${GTK_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${ZLIB_LIBRARIES} ${RT_LIB} ${DL_LIB} ${X11_XTest_LIB})
+target_link_libraries(psxle pcsxcore ${GTK_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${ZLIB_LIBRARIES} ${RT_LIB} ${DL_LIB} ${X11_XTest_LIB} ${HarfBuzz_LIBRARY})
 
 # Shared Library.
 set(SRCS
